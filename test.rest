@@ -1,0 +1,19 @@
+@host = localhost:8080
+@protocol = http
+@baseUrl = {{protocol}}://{{host}}
+
+### CREATE a user
+POST {{baseUrl}}/users
+Content-Type: application/json
+
+{
+  "name": "Mat",
+  "age": 30
+}
+
+### get all users
+GET {{baseUrl}}/users
+Accept: application/json
+
+### delete user
+DELETE {{baseUrl}}/users/5f9f570a9e6d302d03257dfa
