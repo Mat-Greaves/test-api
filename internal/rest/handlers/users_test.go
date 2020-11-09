@@ -10,29 +10,29 @@ import (
 	"testing"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/mat-greaves/test-api/internal/middleware"
-	"github.com/mat-greaves/test-api/internal/models"
+	"github.com/mat-greaves/test-api/internal/rest/middleware"
+	"github.com/mat-greaves/test-api/internal/service/users"
 	"github.com/rs/zerolog"
 )
 
 var uh *UserHandler
 
 // test user store interface that returns fake data
-type testUserStore struct{}
+type testUserService struct{}
 
 // logger to use to inject into all of our handlers
 var logger = zerolog.New(os.Stdout).With().Timestamp().Logger()
 
-func (*testUserStore) CreateUser(ctx context.Context, user *models.NewUser) (models.User, error) {
-	return models.User{
+func (*testUserService) CreateUser(ctx context.Context, user users.CreateUserRequest) (users.User, error) {
+	return users.User{
 		ID:   "testId",
 		Name: user.Name,
 		Age:  user.Age,
 	}, nil
 }
 
-func (*testUserStore) AllUsers(ctx context.Context) ([]models.User, error) {
-	return []models.User{
+func (*testUserService) GetUsers(ctx context.Context) ([]users.User, error) {
+	return []users.User{
 		{
 			ID:   "testId",
 			Name: "test",
@@ -41,13 +41,13 @@ func (*testUserStore) AllUsers(ctx context.Context) ([]models.User, error) {
 	}, nil
 }
 
-func (*testUserStore) DeleteUser(ctx context.Context, id string) error {
+func (*testUserService) DeleteUser(ctx context.Context, id string) error {
 	return nil
 }
 
 func TestMain(m *testing.M) {
 	validate := validator.New()
-	uh = NewUserHandler(validate, &testUserStore{})
+	uh = NewUserHandler(validate, &testUserService{})
 	os.Exit(m.Run())
 }
 

@@ -1,4 +1,4 @@
-package models
+package users
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/mat-greaves/test-api/internal/store"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -14,7 +15,7 @@ var us UserStorer
 var collection *mongo.Collection
 
 func TestMain(m *testing.M) {
-	db, err := NewDB("mongodb://localhost:27017")
+	db, err := store.NewDB("mongodb://localhost:27017")
 	if err != nil {
 		log.Fatalf("failed to connect to database: %s", err)
 	}
@@ -30,33 +31,13 @@ func cleanup(t *testing.T) {
 }
 
 func TestCreateUser(t *testing.T) {
-	t.Run("fail no age", func(t *testing.T) {
-		cleanup(t)
-		newUser := NewUser{
-			Name: "Mat",
-		}
-		_, err := us.CreateUser(context.TODO(), &newUser)
-		if err == nil {
-			t.Errorf("Expected user create to fail")
-		}
-	})
-
-	t.Run("fail no name", func(t *testing.T) {
-		newUser := NewUser{
-			Age: 31,
-		}
-		_, err := us.CreateUser(context.TODO(), &newUser)
-		if err == nil {
-			t.Errorf("Expected user create to fail")
-		}
-	})
 
 	t.Run("create user", func(t *testing.T) {
-		newUser := NewUser{
+		newUser := CreateUserRequest{
 			Name: "Mat",
 			Age:  31,
 		}
-		user, err := us.CreateUser(context.TODO(), &newUser)
+		user, err := us.CreateUser(context.TODO(), newUser)
 		if err != nil {
 			t.Errorf("Failed to create user: %s", err)
 		}
@@ -73,10 +54,10 @@ func TestCreateUser(t *testing.T) {
 	})
 }
 
-func TestAllUsers(t *testing.T) {
+func TestGetUsers(t *testing.T) {
 	t.Run("no users", func(t *testing.T) {
 		cleanup(t)
-		users, err := us.AllUsers(context.Background())
+		users, err := us.GetUsers(context.Background())
 		if err != nil {
 			t.Errorf("AllUsers failed, expected success: %s", err)
 		}
@@ -87,15 +68,15 @@ func TestAllUsers(t *testing.T) {
 
 	t.Run("one user", func(t *testing.T) {
 		cleanup(t)
-		newUser := NewUser{
+		newUser := CreateUserRequest{
 			Name: "Mat",
 			Age:  31,
 		}
-		user, err := us.CreateUser(context.TODO(), &newUser)
+		user, err := us.CreateUser(context.TODO(), newUser)
 		if err != nil {
 			t.Fatalf("Setup failed, could not insert user: %s", err)
 		}
-		users, err := us.AllUsers(context.Background())
+		users, err := us.GetUsers(context.Background())
 		if err != nil {
 			t.Errorf("AllUsers failed, expected success: %s", err)
 		}

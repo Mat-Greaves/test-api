@@ -1,4 +1,4 @@
-package models
+package users
 
 import (
 	"context"
@@ -14,9 +14,9 @@ import (
 // during our tests with a simple interface rather than using a concrete type that relies
 // on the database reference
 type UserStorer interface {
-	CreateUser(context.Context, *NewUser) (User, error)
-	AllUsers(context.Context) ([]User, error)
-	DeleteUser(context.Context, string) error
+	CreateUser(context.Context, CreateUserRequest) (User, error)
+	GetUsers(context.Context) ([]User, error)
+	DeleteUser(context.Context, string) (bool, error)
 }
 
 // don't export type, everything external only needs to know about the
@@ -31,24 +31,7 @@ func NewUserStore(db *mongo.Collection) UserStorer {
 	}
 }
 
-type NewUser struct {
-	Name string `json:"name"`
-	Age  int    `json:"age"`
-}
-
-type User struct {
-	ID   string `json:"_id" bson:"_id,omitempty"`
-	Name string `json:"name" `
-	Age  int    `json:"age" `
-}
-
-func (us *userStore) CreateUser(ctx context.Context, user *NewUser) (User, error) {
-	if user.Name == "" {
-		return User{}, errors.New("expected user name to be set")
-	}
-	if user.Age == 0 {
-		return User{}, errors.New("expected user to have an age")
-	}
+func (us *userStore) CreateUser(ctx context.Context, user CreateUserRequest) (User, error) {
 	res, err := us.db.InsertOne(ctx, user)
 	if err != nil {
 		return User{}, err
@@ -65,7 +48,7 @@ func (us *userStore) CreateUser(ctx context.Context, user *NewUser) (User, error
 	}
 }
 
-func (us *userStore) AllUsers(ctx context.Context) ([]User, error) {
+func (us *userStore) GetUsers(ctx context.Context) ([]User, error) {
 	var users []User
 	cursor, err := us.db.Find(ctx, bson.D{})
 	if err != nil {
@@ -79,11 +62,14 @@ func (us *userStore) AllUsers(ctx context.Context) ([]User, error) {
 	return users, nil
 }
 
-func (us *userStore) DeleteUser(ctx context.Context, id string) error {
+func (us *userStore) DeleteUser(ctx context.Context, id string) (ok bool, err error) {
 	oid, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		return err
+		return false, err
 	}
 	result := us.db.FindOneAndDelete(ctx, bson.M{"_id": oid})
-	return result.Err()
+	if result.Err() != nil && result.Err() != mongo.ErrNoDocuments {
+		return false, err
+	}
+	return true, result.Err()
 }

@@ -5,8 +5,10 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/mat-greaves/test-api/internal/config"
-	"github.com/mat-greaves/test-api/internal/models"
-	"github.com/mat-greaves/test-api/internal/server"
+	"github.com/mat-greaves/test-api/internal/rest/server"
+	"github.com/mat-greaves/test-api/internal/service"
+	"github.com/mat-greaves/test-api/internal/service/users"
+	"github.com/mat-greaves/test-api/internal/store"
 	"github.com/rs/zerolog"
 )
 
@@ -15,12 +17,17 @@ func main() {
 	logger := zerolog.New(os.Stdout).With().Timestamp().Logger()
 	cfg := config.GetConfig()
 	validate := validator.New()
-	db, err := models.NewDB("mongodb://localhost:27017")
+	db, err := store.NewDB("mongodb://localhost:27017")
 	if err != nil {
 		logger.Fatal().Msgf("failed to connect to database: %s", err.Error())
 	}
 	logger.Info().Msg("connected to database")
-	s := server.NewServer(&logger, cfg, db, validate)
-
+	database := db.Database("test-api")
+	userStore := users.NewUserStore(database.Collection("users"))
+	userService := users.NewUserService(userStore)
+	svc := service.Service{
+		Users: userService,
+	}
+	s := server.NewServer(&logger, cfg, validate, &svc)
 	s.Run()
 }

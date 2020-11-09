@@ -3,7 +3,7 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/mat-greaves/test-api/internal/middleware"
+	"github.com/mat-greaves/test-api/internal/rest/middleware"
 )
 
 func NotFoundHandler(w http.ResponseWriter, r *http.Request) {
